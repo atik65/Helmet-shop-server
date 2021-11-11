@@ -94,7 +94,6 @@ const run = async () => {
     // getting multiple orders by filtering email
     app.get(`/:email/orders`, async (req, res) => {
       const email = req.params.email;
-
       const query = { email: email };
 
       const cursor = orderCollection.find(query);
@@ -124,7 +123,7 @@ const run = async () => {
       res.json(result);
     });
 
-    // api for delete a booking
+    // api for delete a order
 
     app.delete("/orders/:id", async (req, res) => {
       const id = req.params.id;
@@ -193,11 +192,6 @@ const run = async () => {
       const email = req.params.email;
       const query = { email: email };
       const user = await userCollection.findOne(query);
-
-      // let isAdmin = false;
-      // if (user?.role === "admin") {
-      //   isAdmin = true;
-      // }
       res.json(user);
     });
   } finally {
