@@ -153,24 +153,28 @@ const run = async () => {
 
     // api for creating a new user
     // creating a user api
-    app.put("/users", async (req, res) => {
+    app.post("/users", async (req, res) => {
       const newUser = req.body;
-      const query = { email: req.body.email };
+      const user = await userCollection.insertOne(newUser);
+      res.json(user);
+    });
+
+    app.put("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
       const options = { upsert: true };
+
       const updateDoc = {
-        $set: newUser,
+        $set: user,
       };
 
-      const result = await helmetCollection.updateOne(
-        query,
-        updateDoc,
-        options
-      );
+      const result = await userCollection.updateOne(query, updateDoc, options);
+
       res.json(result);
     });
 
-    // update a user to admin api
-    app.put("/:email/users", async (req, res) => {
+    // update a user to isAdmin api
+    app.put("/:email/users/admin", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
 
@@ -180,14 +184,8 @@ const run = async () => {
         },
       };
 
-      const user = await userCollection.findOne(query);
-
-      try {
-        const result = await userCollection.updateOne(query, updateDoc);
-        res.json(result);
-      } catch (err) {
-        res.status(401).json({ message: "User Not Found" });
-      }
+      const result = await userCollection.updateOne(query, updateDoc);
+      res.json(result);
     });
 
     // get a single user by email
@@ -195,6 +193,11 @@ const run = async () => {
       const email = req.params.email;
       const query = { email: email };
       const user = await userCollection.findOne(query);
+
+      // let isAdmin = false;
+      // if (user?.role === "admin") {
+      //   isAdmin = true;
+      // }
       res.json(user);
     });
   } finally {
