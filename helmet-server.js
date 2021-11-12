@@ -16,8 +16,6 @@ const port = process.env.PORT || 5000;
 
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.PASS}@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
-// const uri = `mongodb+srv://tourism:OuM7iIgBMf2JT4Vk@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
-
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
