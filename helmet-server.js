@@ -178,14 +178,22 @@ const run = async () => {
       const email = req.params.email;
       const query = { email: email };
 
-      const updateDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
+      const user = await userCollection.findOne(query);
 
-      const result = await userCollection.updateOne(query, updateDoc);
-      res.json(result);
+      if (user == null) {
+        res
+          .status(401)
+          .json({ message: "User Not Found ! Please Register first" });
+      } else {
+        const updateDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+
+        const result = await userCollection.updateOne(query, updateDoc);
+        res.json(result);
+      }
     });
 
     // get a single user by email
