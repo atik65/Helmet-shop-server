@@ -5,5 +5,6 @@
 ### Technologies are using in this server--
 - Nodejs
 - Express.js
+- MongoDB
 - cors
 - dotenv
