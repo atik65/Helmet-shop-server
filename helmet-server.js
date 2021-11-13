@@ -65,6 +65,21 @@ const run = async () => {
       res.json(result);
     });
 
+    // api for update helmet
+    app.put("/helmets/:id", async (req, res) => {
+      const id = req.params.id;
+      const newHelmet = req.body;
+      const query = { _id: ObjectId(id) };
+
+      const updateDoc = {
+        $set: newHelmet,
+      };
+
+      const result = await helmetCollection.updateOne(updateDoc, query);
+
+      res.json(result);
+    });
+
     // api for orders
 
     // creating api for inserting a new order
