@@ -14,7 +14,8 @@ const port = process.env.PORT || 5000;
 
 // connection to mongodb
 
-const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.PASS}@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.PASS}@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://tourism:OuM7iIgBMf2JT4Vk@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -70,12 +71,11 @@ const run = async () => {
       const id = req.params.id;
       const newHelmet = req.body;
       const query = { _id: ObjectId(id) };
-
       const updateDoc = {
         $set: newHelmet,
       };
 
-      const result = await helmetCollection.updateOne(updateDoc, query);
+      const result = await helmetCollection.updateOne(query, updateDoc);
 
       res.json(result);
     });
