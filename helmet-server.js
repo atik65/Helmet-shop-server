@@ -2,6 +2,7 @@ const { MongoClient } = require("mongodb");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const fileUpload = require("express-fileupload");
 const ObjectId = require("mongodb").ObjectId;
 
 const app = express();
@@ -9,12 +10,15 @@ const app = express();
 // middlewares
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 const port = process.env.PORT || 5000;
 
 // connection to mongodb
 
-const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.PASS}@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.PASS}@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+
+const uri = `mongodb+srv://tourism:OuM7iIgBMf2JT4Vk@cluster0.tx5hg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -33,7 +37,17 @@ const run = async () => {
 
     // creating a helmet api
     app.post("/helmets", async (req, res) => {
-      const newHelmet = req.body;
+      const newHelmet = { ...req.body };
+
+      newHelmet.rating = parseFloat(newHelmet.rating);
+      newHelmet.price = parseFloat(newHelmet.price);
+
+      const imageData = req.files.image.data;
+      const encodedImage = imageData.toString("base64");
+      const imageBuffer = Buffer.from(encodedImage, "base64");
+
+      newHelmet.image = imageBuffer;
+      // console.log("New Helmet = ", newHelmet);
 
       const result = await helmetCollection.insertOne(newHelmet);
       res.json(result);
@@ -68,8 +82,20 @@ const run = async () => {
     // api for update helmet
     app.put("/helmets/:id", async (req, res) => {
       const id = req.params.id;
-      const newHelmet = req.body;
+      // const newHelmet = req.body;
       const query = { _id: ObjectId(id) };
+
+      const newHelmet = { ...req.body };
+
+      newHelmet.rating = parseFloat(newHelmet.rating);
+      newHelmet.price = parseFloat(newHelmet.price);
+
+      const imageData = req.files.image.data;
+      const encodedImage = imageData.toString("base64");
+      const imageBuffer = Buffer.from(encodedImage, "base64");
+
+      newHelmet.image = imageBuffer;
+
       const updateDoc = {
         $set: newHelmet,
       };
