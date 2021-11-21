@@ -4,13 +4,23 @@ const express = require("express");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const ObjectId = require("mongodb").ObjectId;
+const { v4: uuid } = require("uuid");
+const stripe = require("stripe")(process.env.stripe_key);
 
 const app = express();
+// const SSLCommerzPayment = require("sslcommerz-lts");
+// const SSLCommerzPayment = require("sslcommerz-lts");
+// const SSLCommerzPayment = require("sslcommerz");
+
+// const store_id = "abcco619207ad9f014";
+// const store_passwd = "abcco619207ad9f014@ssl";
+// const is_live = false; //true for live, false for sandbox
 
 // middlewares
 app.use(cors());
 app.use(express.json());
 app.use(fileUpload());
+app.use(express.urlencoded({ extended: true }));
 
 const port = process.env.PORT || 5000;
 
@@ -120,7 +130,7 @@ const run = async () => {
       res.json(orders);
     });
 
-    // getting a specific booking by id
+    // getting a specific order by id
     app.get("/orders/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
@@ -149,6 +159,26 @@ const run = async () => {
       const updateDoc = {
         $set: {
           status: updatedOrder.status,
+        },
+      };
+
+      const result = await orderCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.json(result);
+    });
+
+    // update the payment status of an order
+    app.put("/orders/payment/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      // create a document that sets the status of the bookingCollection
+      const updateDoc = {
+        $set: {
+          paid: true,
         },
       };
 
@@ -239,6 +269,210 @@ const run = async () => {
       const user = await userCollection.findOne(query);
       res.json(user);
     });
+
+    // siripe payment api
+    app.post("/payment/stripe", async (req, res) => {
+      const order = req.body;
+
+      try {
+        const session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: order?.product,
+                },
+                unit_amount: order?.price * 100,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `http://localhost:3000/payment/success/${order._id}`,
+          cancel_url: "http://localhost:3000/",
+        });
+
+        res.json({ url: session.url });
+      } catch (error) {
+        res.json({ error: error.message });
+      }
+    });
+
+    // ssl commerz payment api
+    // app.post("/sslcommerz", (req, res) => {
+    //   const order = req.body;
+    //   console.log(order);
+
+    //   const data = {
+    //     total_amount: order.price,
+    //     currency: "BDT",
+    //     tran_id: uuid(), // use unique tran_id for each api call
+    //     success_url: `http://localhost:5000/success`,
+    //     fail_url: "http://localhost:5000/fail",
+    //     cancel_url: "http://localhost:5000/cancel",
+    //     ipn_url: "http://localhost:5000/ipn",
+    //     shipping_method: "Courier",
+    //     product_name: order.product,
+    //     product_category: "Helmet",
+    //     product_profile: "general",
+    //     cus_name: "Customer Name",
+    //     cus_email: "customer@example.com",
+    //     cus_add1: "Dhaka",
+    //     cus_add2: "Dhaka",
+    //     cus_city: "Dhaka",
+    //     cus_state: "Dhaka",
+    //     cus_postcode: "1000",
+    //     cus_country: "Bangladesh",
+    //     cus_phone: "",
+    //     cus_fax: "",
+    //     ship_name: "Customer Name",
+    //     ship_add1: "Dhaka",
+    //     ship_add2: "Dhaka",
+    //     ship_city: "Dhaka",
+    //     ship_state: "Dhaka",
+    //     ship_postcode: 1000,
+    //     ship_country: "Bangladesh",
+    //   };
+    //   // const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    //   const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    //   // console.log(store_id, store_passwd);
+    //   sslcz
+    //     .init(data)
+    //     .then((apiResponse) => {
+    //       // Redirect the user to payment gateway
+    //       console.log("api response = ", apiResponse);
+    //       let GatewayPageURL = apiResponse.GatewayPageURL;
+    //       console.log("Redirecting to: ", GatewayPageURL);
+    //       res.json({ url: GatewayPageURL });
+    //     })
+    //     .catch((error) => {
+    //       res.json({ error: error.message });
+    //     });
+    // });
+
+    // app.post("/sslcommerz", (req, res) => {
+    //   const data = {
+    //     total_amount: 100,
+    //     currency: "EUR",
+    //     tran_id: "REF123",
+    //     success_url: "http://localhost:5000/success",
+    //     fail_url: "http://localhost:5000/fail",
+    //     cancel_url: "http://localhost:5000/cancel",
+    //     ipn_url: "http://localhost:5000/ipn",
+    //     shipping_method: "Courier",
+    //     product_name: "Computer.",
+    //     product_category: "Electronic",
+    //     product_profile: "general",
+    //     cus_name: "Customer Name",
+    //     cus_email: "cust@yahoo.com",
+    //     cus_add1: "Dhaka",
+    //     cus_add2: "Dhaka",
+    //     cus_city: "Dhaka",
+    //     cus_state: "Dhaka",
+    //     cus_postcode: "1000",
+    //     cus_country: "Bangladesh",
+    //     cus_phone: "01711111111",
+    //     cus_fax: "01711111111",
+    //     ship_name: "Customer Name",
+    //     ship_add1: "Dhaka",
+    //     ship_add2: "Dhaka",
+    //     ship_city: "Dhaka",
+    //     ship_state: "Dhaka",
+    //     ship_postcode: 1000,
+    //     ship_country: "Bangladesh",
+    //     multi_card_name: "mastercard",
+    //     value_a: "ref001_A",
+    //     value_b: "ref002_B",
+    //     value_c: "ref003_C",
+    //     value_d: "ref004_D",
+    //   };
+    //   const sslcommer = new SSLCommerzPayment(
+    //     "abcco619207ad9f014",
+    //     "abcco619207ad9f014@ssl",
+    //     false
+    //   ); //true for live default false for sandbox
+    //   sslcommer.init(data).then((data) => {
+    //     console.log("data=", data);
+    //   });
+    // });
+
+    // app.post("/sslcommerz", (req, res) => {
+    //   const { product } = req.body;
+
+    //   const data = {
+    //     total_amount: product.price * product.quantity,
+    //     currency: "BDT",
+    //     tran_id: uuid(), // use unique tran_id for each api call
+    //     success_url: "https://frozen-sea-04813.herokuapp.com/success",
+    //     fail_url: "https://frozen-sea-04813.herokuapp.com/fail",
+    //     cancel_url: "https://frozen-sea-04813.herokuapp.com/cancel",
+    //     ipn_url: "https://frozen-sea-04813.herokuapp.com/ipin",
+    //     shipping_method: "Courier",
+    //     product_name: product.name,
+    //     product_category: "Electronic",
+    //     product_profile: "general",
+    //     cus_name: "Customer Name",
+    //     cus_email: "customer@example.com",
+    //     cus_add1: "Dhaka",
+    //     cus_add2: "Dhaka",
+    //     cus_city: "Dhaka",
+    //     cus_state: "Dhaka",
+    //     cus_postcode: "1000",
+    //     cus_country: "Bangladesh",
+    //     cus_phone: "01711111111",
+    //     cus_fax: "01711111111",
+    //     ship_name: "Customer Name",
+    //     ship_add1: "Dhaka",
+    //     ship_add2: "Dhaka",
+    //     ship_city: "Dhaka",
+    //     ship_state: "Dhaka",
+    //     ship_postcode: 1000,
+    //     ship_country: "Bangladesh",
+    //   };
+    //   const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    //   sslcz
+    //     .init(data)
+    //     .then((apiResponse) => {
+    //       // Redirect the user to payment gateway
+    //       let GatewayPageURL = apiResponse.GatewayPageURL;
+
+    //       res.json(GatewayPageURL);
+    //       console.log("Redirecting to: ", GatewayPageURL);
+    //     })
+    //     .catch((error) => {
+    //       res.json(error);
+    //     });
+    // });
+
+    // app.post("/success", async (req, res) => {
+    // const id = req.params.id;
+
+    // const filter = { _id: ObjectId(id) };
+    // const options = { upsert: true };
+    // // create a document that sets the status of the bookingCollection
+    // const updateDoc = {
+    //   $set: {
+    //     paid: true,
+    //   },
+    // };
+
+    // const result = await orderCollection.updateOne(
+    //   filter,
+    //   updateDoc,
+    //   options
+    // );
+
+    //   res.redirect("http://localhost:3000/dashboard/myorders");
+    // });
+
+    // app.post("/cancel", (req, res) => {
+    //   res.redirect("http://localhost:3000/dashboard/myorders");
+    // });
+
+    // app.post("/fail", (req, res) => {
+    //   res.redirect("http://localhost:3000/dashboard/myorders");
+    // });
   } finally {
     // await client.close();
   }
