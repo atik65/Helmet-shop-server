@@ -289,8 +289,8 @@ const run = async () => {
             },
           ],
           mode: "payment",
-          success_url: `http://localhost:3000/payment/success/${order._id}`,
-          cancel_url: "http://localhost:3000/",
+          success_url: `https://helmet-market.web.app/payment/success/${order._id}`,
+          cancel_url: "https://helmet-market.web.app/",
         });
 
         res.json({ url: session.url });
